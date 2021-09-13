@@ -54,7 +54,7 @@ if datetime.today().weekday() < 5:
     schedule.every().day.at("07:00").do(controller.run_strategy)
     schedule.every(10).minutes.at(":00").until("13:10").do(controller.show_current_holdings)
     schedule.every().day.at("12:30").do(controller.run_before_market_close)
-    schedule.every().day.at("01:00").do(controller.run_after_market_close)
+    schedule.every().day.at("13:00").do(controller.run_after_market_close)
 
 while True:
     schedule.run_pending()
