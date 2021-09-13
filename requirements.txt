@@ -1,0 +1,4 @@
+alpaca-trade-api==0.51.0
+colorama==0.4.4
+schedule==1.1.0
+pyyaml=5.4.1
