@@ -107,6 +107,7 @@ class AlpacaClient(Broker):
         print("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))
         if self.is_market_open():
             resp = self.api.submit_order(symbol, qty, side, "market", "day",
+                                         order_class="bracket",
                                          take_profit={"limit_price": upper_limit},
                                          stop_loss={"stop_price": lower_limit})
             self.notification.notify("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))

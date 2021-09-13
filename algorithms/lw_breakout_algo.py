@@ -30,7 +30,7 @@ class LWBreakout(Algorithm):
     BARSET_RECORDS = 5
 
     def __init__(self, broker: Broker):
-        self.name = "LW_Breakout"
+        self.name = "LWBreakout"
         self.watchlist = WatchList()
         self.broker = broker
         self.portfolio = PortFolio(broker)

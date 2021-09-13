@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from utils.broker import Broker
 from utils.notification import Notification
 
@@ -11,3 +13,4 @@ class FinalSteps(object):
     def show_portfolio_details(self):
         portfolio = self.broker.get_portfolio()
         self.notification.notify("Final portfolio value: ${:.2f}".format(float(portfolio.portfolio_value)))
+        print("{}: Run completed ... ".format(datetime.now()))

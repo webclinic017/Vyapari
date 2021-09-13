@@ -1,5 +1,5 @@
 dry_run: True
 
 # Config for LWBreakoutConfig Strategy
-LWBreakoutConfig:
+LWBreakout:
 

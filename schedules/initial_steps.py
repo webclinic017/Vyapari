@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from utils.broker import Broker
 from utils.notification import Notification
 
@@ -15,4 +17,4 @@ class InitialSteps(object):
     @staticmethod
     def show_configuration():
         # TODO: Implement this
-        print("Getting configuration ... ")
+        print("{}: Starting to run ... ".format(datetime.now()))
