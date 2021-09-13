@@ -5,6 +5,7 @@
 from dataclasses import dataclass
 from typing import List
 
+from algorithms.algorithm import Algorithm
 from schedules.watchlist import WatchList
 from utils.broker import Broker, Timeframe
 from utils.portfolio import PortFolio
@@ -21,7 +22,7 @@ class LWStock:
     upper_limit: float
 
 
-class LWBreakout(object):
+class LWBreakout(Algorithm):
     MAX_NUM_STOCKS = 20
     STOCK_MIN_PRICE = 20
     STOCK_MAX_PRICE = 1000
@@ -29,9 +30,13 @@ class LWBreakout(object):
     BARSET_RECORDS = 5
 
     def __init__(self, broker: Broker):
+        self.name = "LW_Breakout"
         self.watchlist = WatchList()
         self.broker = broker
         self.portfolio = PortFolio(broker)
+
+    def get_algo_name(self) -> str:
+        return self.name
 
     def run(self):
         stock_picks = self._get_todays_picks()

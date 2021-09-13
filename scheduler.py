@@ -3,7 +3,7 @@ from datetime import datetime
 
 import schedule
 
-from algorithms.algo_lw_breakout import LWBreakout
+from algorithms.lw_breakout_algo import LWBreakout
 from schedules.cleanup import CleanUp
 from schedules.final_steps import FinalSteps
 from schedules.initial_steps import InitialSteps
