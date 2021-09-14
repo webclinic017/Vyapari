@@ -40,10 +40,15 @@ class LWBreakout(Algorithm):
 
     def run(self):
         stock_picks = self._get_todays_picks()
-
+        count = 0
         for stock in stock_picks:
             no_of_shares = int(self.portfolio.get_stake_amount_per_order() / stock.market_price)
-            self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.lower_limit, stock.upper_limit)
+            if stock.market_price > stock.lower_limit and count < LWBreakout.MAX_NUM_STOCKS:
+                self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.lower_limit, stock.upper_limit)
+                count = count + 1
+            else:
+                print("Skip the stock {}: current price (${:.2f}) < lower limit price (${:.2f})".format(
+                    stock.symbol, stock.market_price, stock.lower_limit))
 
     def _get_stock_df(self, stock):
         df = self.broker.get_barset(stock, Timeframe.DAY, limit=LWBreakout.BARSET_RECORDS)
@@ -55,12 +60,11 @@ class LWBreakout(Algorithm):
     def _get_todays_picks(self) -> List[LWStock]:
         # get the best buy and strong buy stock from Nasdaq.com and sort them by the best stocks
 
-        from_watchlist = self.watchlist.get_best()
+        from_watchlist = self.watchlist.get_universe()
         stock_info = []
 
-        for count, record in enumerate(from_watchlist):
+        for count, stock in enumerate(from_watchlist):
 
-            stock = record.upper()
             if not self.broker.is_tradable(stock):
                 print('stock symbol {} is not tradable with broker'.format(stock))
                 continue
@@ -88,7 +92,7 @@ class LWBreakout(Algorithm):
 
             weightage = self._calculate_weightage(percent_change, y_change)
             lower_limit = round(stock_price - (y_range * 0.25), 2)
-            upper_limit = round(stock_price + (3 * (y_range * 0.25)), 2)
+            upper_limit = round(stock_price + (2 * (y_range * 0.25)), 2)
 
             stock_info.append(
                 LWStock(stock, y_change, percent_change, weightage, lower_limit, stock_price, upper_limit))
@@ -105,4 +109,4 @@ class LWBreakout(Algorithm):
 
     @staticmethod
     def _select_best(biggest_movers):
-        return [x for x in biggest_movers if x.weightage > 10 and x.yesterdays_change > 4][:LWBreakout.MAX_NUM_STOCKS]
+        return [x for x in biggest_movers if x.weightage > 10 and x.yesterdays_change > 4]

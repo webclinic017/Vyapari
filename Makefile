@@ -1,8 +1,8 @@
 run: venv
-	source venv/bin/activate && python main.py
+	source venv/bin/activate && python3 main.py
 
 venv:
-	test -d venv || python -m venv venv
+	test -d venv || python3 -m venv venv
 	. venv/bin/activate; pip install -Ur requirements.txt
 
 clean:

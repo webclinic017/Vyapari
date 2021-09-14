@@ -2,3 +2,6 @@ alpaca-trade-api==0.51.0
 colorama==0.4.4
 schedule==1.1.0
 PyYAML==5.4.1
+ulid-py==1.1.0
+requests~=2.26.0
+peewee~=3.14.4

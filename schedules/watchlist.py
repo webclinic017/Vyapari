@@ -9,8 +9,8 @@ from requests import ConnectTimeout, HTTPError, ReadTimeout, Timeout
 
 class WatchList(object):
     nasdaq = "https://api.nasdaq.com/api/screener/stocks?tableonly=true"
-    no_of_stocks = 1000
-    stocks_type = ["mega", "large", "mid"]
+    no_of_stocks = 3000
+    stocks_type = ["mega", "large", "mid", "small"]
     recommendation_type = ["strong_buy", "buy"]
 
     def __init__(self):
@@ -19,13 +19,16 @@ class WatchList(object):
                                         "=".join(["recommendation", "|".join(WatchList.recommendation_type)])
                                         ])
 
-    def get_best(self) -> List[str]:
-        # TODO: colorama
+    def get_universe(self) -> List[str]:
+
+        # for stock_type in self.stock_types:
         print("Fetching the best {} {} recommended {} stocks from NASDAQ"
               .format(self.no_of_stocks, self.recommendation_type, self.stocks_type))
         data = self._get_nasdaq_buy_stocks()
         nasdaq_records = data['data']['table']['rows']
-        return [rec['symbol'] for rec in nasdaq_records]
+        all_stocks = [rec['symbol'].strip().upper() for rec in nasdaq_records]
+        print("Stocks from NASDAQ: ", all_stocks)
+        return all_stocks
 
     def _get_nasdaq_buy_stocks(self):
         # api used by https://www.nasdaq.com/market-activity/stocks/screener

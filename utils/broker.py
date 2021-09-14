@@ -110,7 +110,7 @@ class AlpacaClient(Broker):
                                          order_class="bracket",
                                          take_profit={"limit_price": upper_limit},
                                          stop_loss={"stop_price": lower_limit})
-            self.notification.notify("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))
+            self.notification.notify("Bracket order to {}: {} shares of {} placed".format(side, qty, symbol))
             # return resp
         else:
             print("Order to {} could not be placed ...Market is NOT open.. !".format(side))
