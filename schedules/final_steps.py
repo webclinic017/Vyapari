@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from utils.broker import Broker
-from utils.notification import Notification
+from utils.pushover import Notification
 
 
 class FinalSteps(object):

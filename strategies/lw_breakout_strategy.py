@@ -20,9 +20,11 @@ class LWStock:
     yesterdays_change: float
     moved: float
     weightage: float
-    lower_limit: float
+    stop_loss: float
     market_price: float
-    upper_limit: float
+    take_profit: float
+    lw_lower_bound: float
+    lw_upper_bound: float
 
 
 class LWBreakout(object):
@@ -38,22 +40,34 @@ class LWBreakout(object):
         self.broker = broker
         self.portfolio = PortFolio(broker)
 
+        self.trade_count = 0
+        self.todays_stock_picks: List[LWStock] = []
+
     def get_algo_name(self) -> str:
         return self.name
 
-    def run(self):
+    def initialize(self):
+        self.todays_stock_picks: List[LWStock] = self._get_todays_picks()
         self.broker.close_all_positions()
-        stock_picks = self._get_todays_picks()
-        count = 0
-        for stock in stock_picks:
-            current_market_price = self.broker.get_current_price(stock.symbol)
-            no_of_shares = int(self.portfolio.get_stake_amount_per_order() / current_market_price)
-            if current_market_price > stock.lower_limit and count < LWBreakout.MAX_NUM_STOCKS:
-                self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.lower_limit, stock.upper_limit)
-                count = count + 1
-            else:
-                print("Skip the stock {}: current price (${:.2f}) < lower limit price (${:.2f})".format(
-                    stock.symbol, current_market_price, stock.lower_limit))
+
+    def run(self):
+
+        if not self.broker.is_market_open():
+            print("Market not open !")
+            return
+
+        # First check if stock not already purchased
+        held_stocks = [x.symbol for x in self.broker.get_positions()]
+
+        for stock in self.todays_stock_picks:
+            if stock.symbol not in held_stocks:
+                print("Checking .. {}: ${}".format(stock.symbol, stock.market_price))
+                current_market_price = self.broker.get_current_price(stock.symbol)
+
+                if current_market_price > stock.lw_upper_bound and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                    no_of_shares = int(self.portfolio.get_stake_amount_per_order() / current_market_price)
+                    self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.stop_loss, stock.take_profit)
+                    self.trade_count = self.trade_count + 1
 
     def _get_stock_df(self, stock):
         data_folder = "data"
@@ -111,11 +125,15 @@ class LWBreakout(object):
             y_range = y_stock_high - y_stock_low  # yesterday's range
 
             weightage = self._calculate_weightage(percent_change, y_change)
-            lower_limit = round(stock_price - (y_range * 0.25), 2)
-            upper_limit = round(stock_price + (2 * (y_range * 0.25)), 2)
+            lw_lower_bound = round(stock_price - (y_range * 0.25), 2)
+            lw_upper_bound = round(stock_price + (y_range * 0.25), 2)
+
+            stop_loss = round(stock_price - (2 * (y_range * 0.25)), 2)
+            take_profit = round(stock_price + (3 * (y_range * 0.25)), 2)
 
             stock_info.append(
-                LWStock(stock, y_change, percent_change, weightage, lower_limit, stock_price, upper_limit))
+                LWStock(stock, y_change, percent_change, weightage, stop_loss, stock_price,
+                        take_profit, lw_lower_bound, lw_upper_bound))
 
         biggest_movers = sorted(stock_info, key=lambda i: i.weightage, reverse=True)
         stock_picks = self._select_best(biggest_movers)

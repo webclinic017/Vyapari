@@ -4,7 +4,7 @@ from datetime import datetime
 import schedule
 import ulid
 
-from strategies.lw_breakout_algo import LWBreakout
+from strategies.lw_breakout_strategy import LWBreakout
 from schedules.cleanup import CleanUp
 from schedules.final_steps import FinalSteps
 from schedules.initial_steps import InitialSteps
@@ -29,16 +29,14 @@ class AppConfig(object):
         self.final_steps = FinalSteps(self.broker, self.notification)
 
     def run_initial_steps(self):
-        return self.initial_steps.show_portfolio_details()
-
-    def get_universe_of_stocks(self):
-        print(self.watchlist.get_universe())
-
-    def show_current_holdings(self):
-        return self.intermediate.run_stats()
+        self.initial_steps.show_portfolio_details()
+        return self.strategy.initialize()
 
     def run_strategy(self):
         self.strategy.run()
+
+    def show_current_holdings(self):
+        return self.intermediate.run_stats()
 
     def run_before_market_close(self):
         self.cleanup.close_all_positions()
@@ -55,16 +53,16 @@ if __name__ == "__main__":
 
     app_config = AppConfig()
     run_id = app_config.generate_run_id()
-    start_time = "06:30"
-    before_market_close = "12:30"
+    start_trading = "06:30"
+    stop_trading = "12:30"
     end_time = "13:00"
 
     # Run this only on weekdays : PST time
     if datetime.today().weekday() < 5:
-        schedule.every().day.at(start_time).do(app_config.run_initial_steps)
-        schedule.every().day.at(start_time).do(app_config.run_strategy)
-        schedule.every(3).minutes.at(":00").until(end_time).do(app_config.show_current_holdings)
-        schedule.every().day.at(before_market_close).do(app_config.run_before_market_close)
+        schedule.every().day.at(start_trading).do(app_config.run_initial_steps)
+        schedule.every(1).minutes.at(":00").until(stop_trading).do(app_config.run_strategy)
+        schedule.every(5).minutes.at(":00").until(end_time).do(app_config.show_current_holdings)
+        schedule.every().day.at(stop_trading).do(app_config.run_before_market_close)
         schedule.every().day.at(end_time).do(app_config.run_after_market_close)
 
     while True:
