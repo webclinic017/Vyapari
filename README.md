@@ -21,6 +21,9 @@ This project is highly customizable and is based on the following:
 - Populate the required values for Alpaca and Pushover
 - Run the following command `make clean run`
 
+## Backtesting
+- Run the `$ ptython3 backtest.py` with required params
+
 ## Concepts
 To be filled up later
 

@@ -6,7 +6,7 @@ from alpaca_trade_api.entity import BarSet
 from schedules.watchlist import WatchList
 from strategies.strategy import Strategy
 from utils.broker import AlpacaClient, Timeframe
-from utils.pushover import NoOpNotification
+from utils.notification import NoOpNotification
 from utils.util import load_env_variables
 
 

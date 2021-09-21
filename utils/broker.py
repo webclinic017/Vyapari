@@ -9,7 +9,7 @@ import alpaca_trade_api as alpaca_api
 from alpaca_trade_api.entity import BarSet, Position, Account
 from alpaca_trade_api.rest import APIError
 
-from utils.pushover import Notification
+from utils.notification import Notification
 
 
 class Timeframe(Enum):

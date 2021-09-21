@@ -11,7 +11,6 @@ import pandas
 
 from schedules.watchlist import WatchList
 from utils.broker import Broker, Timeframe
-from utils.portfolio import PortFolio
 
 
 @dataclass
@@ -28,17 +27,20 @@ class LWStock:
 
 
 class LWBreakout(object):
-    MAX_NUM_STOCKS = 40
+
+    # TODO : Move the constants to Algo config
     STOCK_MIN_PRICE = 20
     STOCK_MAX_PRICE = 1000
     MOVED_DAYS = 3
     BARSET_RECORDS = 5
 
+    AMOUNT_PER_ORDER = 1000
+    MAX_NUM_STOCKS = 40
+
     def __init__(self, broker: Broker):
         self.name = "LWBreakout"
         self.watchlist = WatchList()
         self.broker = broker
-        self.portfolio = PortFolio(broker)
 
         self.trade_count = 0
         self.todays_stock_picks: List[LWStock] = []
@@ -66,7 +68,7 @@ class LWBreakout(object):
                 if stock.lw_upper_bound < current_market_price < stock.take_profit \
                         and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
                     print("Current market price.. {}: ${}".format(stock.symbol, current_market_price))
-                    no_of_shares = int(self.portfolio.get_stake_amount_per_order() / current_market_price)
+                    no_of_shares = int(LWBreakout.AMOUNT_PER_ORDER / current_market_price)
                     self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.stop_loss, stock.take_profit)
                     self.trade_count = self.trade_count + 1
 

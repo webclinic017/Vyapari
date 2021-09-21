@@ -11,7 +11,7 @@ from schedules.initial_steps import InitialSteps
 from schedules.intermediate import Intermediate
 from schedules.watchlist import WatchList
 from utils.broker import AlpacaClient
-from utils.pushover import Pushover
+from utils.notification import Pushover
 from utils.util import load_env_variables
 
 
