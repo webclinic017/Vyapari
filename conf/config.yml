@@ -1,4 +1,7 @@
-dry_run: True
+---
+common:
+  dry_run: True
+  db_name: vyapari.db
 
 # Config for LWBreakoutConfig Strategy
 LWBreakout:

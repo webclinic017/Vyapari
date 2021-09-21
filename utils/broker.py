@@ -2,12 +2,14 @@ import abc
 import datetime
 import time
 from enum import Enum
+from random import randint
 from typing import List
 
 import alpaca_trade_api as alpaca_api
 from alpaca_trade_api.entity import BarSet, Position, Account
+from alpaca_trade_api.rest import APIError
 
-from utils.notification import Notification
+from utils.pushover import Notification
 
 
 class Timeframe(Enum):
@@ -21,6 +23,10 @@ class Broker(abc.ABC):
 
     @abc.abstractmethod
     def get_portfolio(self):
+        pass
+
+    @abc.abstractmethod
+    def get_current_price(self, symbol):
         pass
 
     @abc.abstractmethod
@@ -61,7 +67,9 @@ class Broker(abc.ABC):
 
 
 class AlpacaClient(Broker):
+    MAX_RETRIES = 3
     def __init__(self, notification: Notification):
+
         self.api = alpaca_api.REST()
         self.notification = notification
         self.account = self.api.get_account()
@@ -69,6 +77,9 @@ class AlpacaClient(Broker):
 
     def get_portfolio(self) -> Account:
         return self.api.get_account()
+
+    def get_current_price(self, symbol) -> float:
+        return self.api.get_last_trade(symbol).price
 
     def get_barset(self, symbol: str, timeframe: Timeframe, limit: int) -> BarSet:
         return self.api.get_barset(symbol, timeframe.value, limit).df[symbol]
@@ -106,31 +117,41 @@ class AlpacaClient(Broker):
         side = "buy"
         print("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))
         if self.is_market_open():
-            resp = self.api.submit_order(symbol, qty, side, "market", "day",
-                                         order_class="bracket",
-                                         take_profit={"limit_price": upper_limit},
-                                         stop_loss={"stop_price": lower_limit})
-            self.notification.notify("Bracket order to {}: {} shares of {} placed".format(side, qty, symbol))
-            # return resp
+            try:
+                resp = self.api.submit_order(symbol, qty, side, "market", "day",
+                                             order_class="bracket",
+                                             take_profit={"limit_price": upper_limit},
+                                             stop_loss={"stop_price": lower_limit})
+            except APIError as api_error:
+                self.notification.notify("Bracket order to {}: {} shares of {} could not be placed: {}"
+                                         .format(side, qty, symbol, api_error))
+            else:
+                self.notification.notify("Bracket order to {}: {} shares of {} placed".format(side, qty, symbol))
+                # return resp
         else:
             print("Order to {} could not be placed ...Market is NOT open.. !".format(side))
 
     def cancel_open_orders(self):
         if self.is_market_open():
+            print("Closing all open orders ...")
             self.api.cancel_all_orders()
+            time.sleep(randint(1, 3))
+
         else:
             print("Could not cancel open orders ...Market is NOT open.. !")
 
-    def close_all_positions(self):
+    def close_all_positions(self, trying=0):
         if self.is_market_open():
-            positions = self.api.list_positions()
-            for position in positions:
-                side = "sell" if position.side == "long" else "buy"
-                qty = int(position.qty)
-                self.api.submit_order(position.symbol, qty, side, "market", "day")
+            print("Closing all open positions ... Trying: {} time".format(trying+1))
+            self.api.close_all_positions()
 
-            # wait for orders to fill
-            time.sleep(5)
+            time.sleep(randint(3, 7))
+            if trying < AlpacaClient.MAX_RETRIES and len(self.get_positions()) > 0:
+                trying = trying + 1
+                self.close_all_positions(trying)
+            else:
+                self.notification.notify("Could not close all positions ... ".format(trying))
+
         else:
             print("Positions cannot be closed ...Market is NOT open.. !")
 

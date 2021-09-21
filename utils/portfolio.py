@@ -12,7 +12,7 @@ class PortFolio(object):
 
     def get_stake_amount_per_order(self):
         # get this from conf or calculate it
-        return 2000.00
+        return 1000.00
 
     def get_portfolio_details(self):
         # from broker

@@ -9,7 +9,7 @@ from requests import ConnectTimeout, HTTPError, ReadTimeout, Timeout
 
 class WatchList(object):
     nasdaq = "https://api.nasdaq.com/api/screener/stocks?tableonly=true"
-    no_of_stocks = 3000
+    no_of_stocks = 4000
     stocks_type = ["mega", "large", "mid", "small"]
     recommendation_type = ["strong_buy", "buy"]
 

@@ -1,11 +1,14 @@
 """
-    Larry Williams Breakout algo :
+    Larry Williams Breakout strategy :
     https://www.whselfinvest.com/en-lu/trading-platform/free-trading-strategies/tradingsystem/56-volatility-break-out-larry-williams-free
 """
 from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
 from typing import List
 
-from algorithms.algorithm import Algorithm
+import pandas
+
 from schedules.watchlist import WatchList
 from utils.broker import Broker, Timeframe
 from utils.portfolio import PortFolio
@@ -22,8 +25,8 @@ class LWStock:
     upper_limit: float
 
 
-class LWBreakout(Algorithm):
-    MAX_NUM_STOCKS = 20
+class LWBreakout(object):
+    MAX_NUM_STOCKS = 40
     STOCK_MIN_PRICE = 20
     STOCK_MAX_PRICE = 1000
     MOVED_DAYS = 3
@@ -39,22 +42,39 @@ class LWBreakout(Algorithm):
         return self.name
 
     def run(self):
+        self.broker.close_all_positions()
         stock_picks = self._get_todays_picks()
         count = 0
         for stock in stock_picks:
-            no_of_shares = int(self.portfolio.get_stake_amount_per_order() / stock.market_price)
-            if stock.market_price > stock.lower_limit and count < LWBreakout.MAX_NUM_STOCKS:
+            current_market_price = self.broker.get_current_price(stock.symbol)
+            no_of_shares = int(self.portfolio.get_stake_amount_per_order() / current_market_price)
+            if current_market_price > stock.lower_limit and count < LWBreakout.MAX_NUM_STOCKS:
                 self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.lower_limit, stock.upper_limit)
                 count = count + 1
             else:
                 print("Skip the stock {}: current price (${:.2f}) < lower limit price (${:.2f})".format(
-                    stock.symbol, stock.market_price, stock.lower_limit))
+                    stock.symbol, current_market_price, stock.lower_limit))
 
     def _get_stock_df(self, stock):
-        df = self.broker.get_barset(stock, Timeframe.DAY, limit=LWBreakout.BARSET_RECORDS)
-        # df['pct_change'] = round(((df['close'] - df['open']) / df['open']) * 100, 4)
-        # df['net_change'] = 1 + (df['pct_change'] / 100)
-        # df['cum_change'] = df['net_change'].cumprod()
+        data_folder = "data"
+        today = date.today().isoformat()
+        df_path = Path("/".join([data_folder, today, stock + ".pkl"]))
+        df_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if df_path.exists():
+            df = pandas.read_pickle(df_path)
+        else:
+            if self.broker.is_tradable(stock):
+                df = self.broker.get_barset(stock, Timeframe.DAY, limit=LWBreakout.BARSET_RECORDS)
+                # df['pct_change'] = round(((df['close'] - df['open']) / df['open']) * 100, 4)
+                # df['net_change'] = 1 + (df['pct_change'] / 100)
+                # df['cum_change'] = df['net_change'].cumprod()
+                df.to_pickle(df_path)
+
+            else:
+                print('stock symbol {} is not tradable with broker'.format(stock))
+                return None
+
         return df
 
     def _get_todays_picks(self) -> List[LWStock]:
@@ -65,12 +85,12 @@ class LWBreakout(Algorithm):
 
         for count, stock in enumerate(from_watchlist):
 
-            if not self.broker.is_tradable(stock):
-                print('stock symbol {} is not tradable with broker'.format(stock))
+            df = self._get_stock_df(stock)
+            if df is None:
                 continue
 
-            df = self._get_stock_df(stock)
             stock_price = df.iloc[-1]['close']
+            print(df.iloc[-1])
             if stock_price > LWBreakout.STOCK_MAX_PRICE or stock_price < LWBreakout.STOCK_MIN_PRICE:
                 continue
 
@@ -99,7 +119,8 @@ class LWBreakout(Algorithm):
 
         biggest_movers = sorted(stock_info, key=lambda i: i.weightage, reverse=True)
         stock_picks = self._select_best(biggest_movers)
-        print('today\'s picks {}'.format(stock_picks))
+        print('today\'s picks: ')
+        [print(stock_pick) for stock_pick in stock_picks]
         print('\n')
         return stock_picks
 
@@ -109,4 +130,4 @@ class LWBreakout(Algorithm):
 
     @staticmethod
     def _select_best(biggest_movers):
-        return [x for x in biggest_movers if x.weightage > 10 and x.yesterdays_change > 4]
+        return [x for x in biggest_movers if x.weightage > 10 and x.yesterdays_change > 5]
