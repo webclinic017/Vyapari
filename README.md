@@ -14,7 +14,7 @@ This project is highly customizable and is based on the following:
 - Pushover (to send push notifications)
 
 ## Architecture
-![Vyapari](https://user-images.githubusercontent.com/4952220/133060574-94d8e16d-03e3-4b37-a7a1-9cae1848c331.jpeg)
+![Vyapari](https://user-images.githubusercontent.com/4952220/134234830-a3ecd063-53ec-4a61-8a9e-72267e6e1794.jpeg)
 
 ## How to run
 - Rename the `env.yaml.sample` to `env.yaml`
