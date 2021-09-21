@@ -46,7 +46,7 @@ class Broker(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def place_bracket_order(self, symbol, qty, stop_loss, take_profit):
+    def place_bracket_order(self, symbol, side, qty, stop_loss, take_profit):
         pass
 
     @abc.abstractmethod
@@ -113,8 +113,7 @@ class AlpacaClient(Broker):
         else:
             print("{} Order could not be placed ...Market is NOT open.. !".format(side))
 
-    def place_bracket_order(self, symbol, qty, stop_loss, take_profit):
-        side = "buy"
+    def place_bracket_order(self, symbol, side, qty, stop_loss, take_profit):
         print("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))
         if self.is_market_open():
             try:

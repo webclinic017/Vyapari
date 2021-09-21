@@ -1,7 +1,3 @@
-"""
-    Larry Williams Breakout strategy :
-    https://www.whselfinvest.com/en-lu/trading-platform/free-trading-strategies/tradingsystem/56-volatility-break-out-larry-williams-free
-"""
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -19,14 +15,16 @@ class LWStock:
     yesterdays_change: float
     moved: float
     weightage: float
-    stop_loss: float
-    market_price: float
-    take_profit: float
     lw_lower_bound: float
     lw_upper_bound: float
+    step: float
 
 
 class LWBreakout(object):
+    """
+        Larry Williams Breakout strategy :
+        https://www.whselfinvest.com/en-lu/trading-platform/free-trading-strategies/tradingsystem/56-volatility-break-out-larry-williams-free
+    """
 
     # TODO : Move the constants to Algo config
     STOCK_MIN_PRICE = 20
@@ -44,12 +42,14 @@ class LWBreakout(object):
 
         self.trade_count = 0
         self.todays_stock_picks: List[LWStock] = []
+        self.stocks_traded_today: List[str] = []
 
     def get_algo_name(self) -> str:
         return self.name
 
     def initialize(self):
         self.todays_stock_picks: List[LWStock] = self._get_todays_picks()
+        self.broker.await_market_open()
         self.broker.close_all_positions()
 
     def run(self):
@@ -62,15 +62,32 @@ class LWBreakout(object):
         held_stocks = [x.symbol for x in self.broker.get_positions()]
 
         for stock in self.todays_stock_picks:
-            if stock.symbol not in held_stocks:
+
+            # Open new positions on stocks only if not already held or if not traded today
+            if stock.symbol not in held_stocks and stock.symbol not in self.stocks_traded_today:
                 current_market_price = self.broker.get_current_price(stock.symbol)
 
-                if stock.lw_upper_bound < current_market_price < stock.take_profit \
-                        and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
-                    print("Current market price.. {}: ${}".format(stock.symbol, current_market_price))
+                # long
+                if stock.lw_upper_bound < current_market_price and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                    print("Long: Current market price.. {}: ${}".format(stock.symbol, current_market_price))
                     no_of_shares = int(LWBreakout.AMOUNT_PER_ORDER / current_market_price)
-                    self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.stop_loss, stock.take_profit)
+                    stop_loss = current_market_price - (2 * stock.step)
+                    take_profit = current_market_price + (4 * stock.step)
+
+                    self.broker.place_bracket_order(stock.symbol, "buy", no_of_shares, stop_loss, take_profit)
                     self.trade_count = self.trade_count + 1
+                    self.stocks_traded_today.append(stock.symbol)
+
+                # short
+                if stock.lw_lower_bound > current_market_price and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                    print("Short: Current market price.. {}: ${}".format(stock.symbol, current_market_price))
+                    no_of_shares = int(LWBreakout.AMOUNT_PER_ORDER / current_market_price)
+                    stop_loss = current_market_price + (2 * stock.step)
+                    take_profit = current_market_price - (4 * stock.step)
+
+                    self.broker.place_bracket_order(stock.symbol, "sell", no_of_shares, stop_loss, take_profit)
+                    self.trade_count = self.trade_count + 1
+                    self.stocks_traded_today.append(stock.symbol)
 
     def _get_stock_df(self, stock):
         data_folder = "data"
@@ -126,17 +143,14 @@ class LWBreakout(object):
 
             y_change = round((y_stock_close - y_stock_open) / y_stock_open * 100, 3)
             y_range = y_stock_high - y_stock_low  # yesterday's range
+            step = y_range * 0.25
 
             weightage = self._calculate_weightage(percent_change, y_change)
             lw_lower_bound = round(stock_price - (y_range * 0.25), 2)
             lw_upper_bound = round(stock_price + (y_range * 0.25), 2)
 
-            stop_loss = round(stock_price - (2 * (y_range * 0.25)), 2)
-            take_profit = round(stock_price + (4 * (y_range * 0.25)), 2)
-
             stock_info.append(
-                LWStock(stock, y_change, percent_change, weightage, stop_loss, stock_price,
-                        take_profit, lw_lower_bound, lw_upper_bound))
+                LWStock(stock, y_change, percent_change, weightage, lw_lower_bound, lw_upper_bound, step))
 
         biggest_movers = sorted(stock_info, key=lambda i: i.weightage, reverse=True)
         stock_picks = self._select_best(biggest_movers)
