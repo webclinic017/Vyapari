@@ -31,4 +31,5 @@ To be filled up later
 - Concepts from Freqtrade (https://www.freqtrade.io/en/stable/)
 - https://github.com/SC4RECOIN/simple-crypto-breakout-strategy
 
-
+## Note
+This is for educational purpose only. The author is not liable for any monetary loss during trading
