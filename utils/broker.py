@@ -46,7 +46,7 @@ class Broker(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def place_bracket_order(self, symbol, qty, lower_limit, upper_limit):
+    def place_bracket_order(self, symbol, qty, stop_loss, take_profit):
         pass
 
     @abc.abstractmethod
@@ -113,15 +113,15 @@ class AlpacaClient(Broker):
         else:
             print("{} Order could not be placed ...Market is NOT open.. !".format(side))
 
-    def place_bracket_order(self, symbol, qty, lower_limit, upper_limit):
+    def place_bracket_order(self, symbol, qty, stop_loss, take_profit):
         side = "buy"
         print("Placing bracket order to {}: {} shares of {} -> ".format(side, qty, symbol))
         if self.is_market_open():
             try:
                 resp = self.api.submit_order(symbol, qty, side, "market", "day",
                                              order_class="bracket",
-                                             take_profit={"limit_price": upper_limit},
-                                             stop_loss={"stop_price": lower_limit})
+                                             take_profit={"limit_price": take_profit},
+                                             stop_loss={"stop_price": stop_loss})
             except APIError as api_error:
                 self.notification.notify("Bracket order to {}: {} shares of {} could not be placed: {}"
                                          .format(side, qty, symbol, api_error))
@@ -142,13 +142,19 @@ class AlpacaClient(Broker):
 
     def close_all_positions(self, trying=0):
         if self.is_market_open():
-            print("Closing all open positions ... Trying: {} time".format(trying+1))
+            self.cancel_open_orders()
             self.api.close_all_positions()
 
             time.sleep(randint(3, 7))
-            if trying < AlpacaClient.MAX_RETRIES and len(self.get_positions()) > 0:
+            if len(self.get_positions()) == 0:
+                print("Closed all open positions ...")
+                return
+
+            if trying < AlpacaClient.MAX_RETRIES:
                 trying = trying + 1
+                print("Closing all open positions ... Trying: {} time".format(trying))
                 self.close_all_positions(trying)
+
             else:
                 self.notification.notify("Could not close all positions ... ".format(trying))
 

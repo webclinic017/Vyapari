@@ -61,10 +61,11 @@ class LWBreakout(object):
 
         for stock in self.todays_stock_picks:
             if stock.symbol not in held_stocks:
-                print("Checking .. {}: ${}".format(stock.symbol, stock.market_price))
                 current_market_price = self.broker.get_current_price(stock.symbol)
 
-                if current_market_price > stock.lw_upper_bound and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                if stock.lw_upper_bound < current_market_price < stock.take_profit \
+                        and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                    print("Current market price.. {}: ${}".format(stock.symbol, current_market_price))
                     no_of_shares = int(self.portfolio.get_stake_amount_per_order() / current_market_price)
                     self.broker.place_bracket_order(stock.symbol, no_of_shares, stock.stop_loss, stock.take_profit)
                     self.trade_count = self.trade_count + 1
@@ -129,7 +130,7 @@ class LWBreakout(object):
             lw_upper_bound = round(stock_price + (y_range * 0.25), 2)
 
             stop_loss = round(stock_price - (2 * (y_range * 0.25)), 2)
-            take_profit = round(stock_price + (3 * (y_range * 0.25)), 2)
+            take_profit = round(stock_price + (4 * (y_range * 0.25)), 2)
 
             stock_info.append(
                 LWStock(stock, y_change, percent_change, weightage, stop_loss, stock_price,
@@ -148,4 +149,4 @@ class LWBreakout(object):
 
     @staticmethod
     def _select_best(biggest_movers):
-        return [x for x in biggest_movers if x.weightage > 10 and x.yesterdays_change > 5]
+        return [x for x in biggest_movers if x.yesterdays_change > 6]
