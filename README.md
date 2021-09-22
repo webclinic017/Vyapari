@@ -22,7 +22,8 @@ This project is highly customizable and is based on the following:
 - Run the following command `make clean run`
 
 ## Backtesting
-- Run the `$ ptython3 backtest.py` with required params
+- Edit `backtest.py` to suit your needs
+- Run the command`$ python3 backtest.py`
 
 ## Concepts
 To be filled up later

@@ -40,7 +40,6 @@ class LWBreakout(object):
         self.watchlist = WatchList()
         self.broker = broker
 
-        self.trade_count = 0
         self.todays_stock_picks: List[LWStock] = []
         self.stocks_traded_today: List[str] = []
 
@@ -48,7 +47,8 @@ class LWBreakout(object):
         return self.name
 
     def initialize(self):
-        self.todays_stock_picks: List[LWStock] = self._get_todays_picks()
+        self.stocks_traded_today = []
+        self.todays_stock_picks = self._get_todays_picks()
         self.broker.await_market_open()
         self.broker.close_all_positions()
 
@@ -66,27 +66,26 @@ class LWBreakout(object):
             # Open new positions on stocks only if not already held or if not traded today
             if stock.symbol not in held_stocks and stock.symbol not in self.stocks_traded_today:
                 current_market_price = self.broker.get_current_price(stock.symbol)
+                trade_count = len(self.stocks_traded_today)
 
                 # long
-                if stock.lw_upper_bound < current_market_price and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                if stock.lw_upper_bound < current_market_price and trade_count < LWBreakout.MAX_NUM_STOCKS:
                     print("Long: Current market price.. {}: ${}".format(stock.symbol, current_market_price))
                     no_of_shares = int(LWBreakout.AMOUNT_PER_ORDER / current_market_price)
                     stop_loss = current_market_price - (2 * stock.step)
                     take_profit = current_market_price + (4 * stock.step)
 
                     self.broker.place_bracket_order(stock.symbol, "buy", no_of_shares, stop_loss, take_profit)
-                    self.trade_count = self.trade_count + 1
                     self.stocks_traded_today.append(stock.symbol)
 
                 # short
-                if stock.lw_lower_bound > current_market_price and self.trade_count < LWBreakout.MAX_NUM_STOCKS:
+                if stock.lw_lower_bound > current_market_price and trade_count < LWBreakout.MAX_NUM_STOCKS:
                     print("Short: Current market price.. {}: ${}".format(stock.symbol, current_market_price))
                     no_of_shares = int(LWBreakout.AMOUNT_PER_ORDER / current_market_price)
                     stop_loss = current_market_price + (2 * stock.step)
                     take_profit = current_market_price - (4 * stock.step)
 
                     self.broker.place_bracket_order(stock.symbol, "sell", no_of_shares, stop_loss, take_profit)
-                    self.trade_count = self.trade_count + 1
                     self.stocks_traded_today.append(stock.symbol)
 
     def _get_stock_df(self, stock):
@@ -99,7 +98,7 @@ class LWBreakout(object):
             df = pandas.read_pickle(df_path)
         else:
             if self.broker.is_tradable(stock):
-                df = self.broker.get_barset(stock, Timeframe.DAY, limit=LWBreakout.BARSET_RECORDS)
+                df = self.broker.get_bars(stock, Timeframe.DAY, limit=LWBreakout.BARSET_RECORDS)
                 # df['pct_change'] = round(((df['close'] - df['open']) / df['open']) * 100, 4)
                 # df['net_change'] = 1 + (df['pct_change'] / 100)
                 # df['cum_change'] = df['net_change'].cumprod()
@@ -143,11 +142,11 @@ class LWBreakout(object):
 
             y_change = round((y_stock_close - y_stock_open) / y_stock_open * 100, 3)
             y_range = y_stock_high - y_stock_low  # yesterday's range
-            step = y_range * 0.25
+            step = round(y_range * 0.25, 3)
 
             weightage = self._calculate_weightage(percent_change, y_change)
-            lw_lower_bound = round(stock_price - (y_range * 0.25), 2)
-            lw_upper_bound = round(stock_price + (y_range * 0.25), 2)
+            lw_lower_bound = round(stock_price - step, 3)
+            lw_upper_bound = round(stock_price + step, 3)
 
             stock_info.append(
                 LWStock(stock, y_change, percent_change, weightage, lw_lower_bound, lw_upper_bound, step))

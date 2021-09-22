@@ -33,7 +33,7 @@ class LWBreakout(object):
             if self.start_fresh or not df_path.exists():
                 print("Downloading data for {} for {} days".format(symbol, self.backtest_days))
                 if self.broker.is_tradable(symbol):
-                    df: BarSet = self.broker.get_barset(symbol, Timeframe.DAY, limit=self.backtest_days)
+                    df: BarSet = self.broker.get_bars(symbol, Timeframe.DAY, limit=self.backtest_days)
                     df.to_pickle(df_path)
                 else:
                     print("{} is not tradable with broker".format(symbol))

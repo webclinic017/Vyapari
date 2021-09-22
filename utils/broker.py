@@ -30,7 +30,7 @@ class Broker(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_barset(self, symbol: str, timeframe: Timeframe, limit: int):
+    def get_bars(self, symbol: str, timeframe: Timeframe, limit: int):
         pass
 
     @abc.abstractmethod
@@ -68,12 +68,10 @@ class Broker(abc.ABC):
 
 class AlpacaClient(Broker):
     MAX_RETRIES = 3
-    def __init__(self, notification: Notification):
 
+    def __init__(self, notification: Notification):
         self.api = alpaca_api.REST()
         self.notification = notification
-        self.account = self.api.get_account()
-        self.positions = sorted([p.symbol for p in self.api.list_positions()])
 
     def get_portfolio(self) -> Account:
         return self.api.get_account()
@@ -81,7 +79,10 @@ class AlpacaClient(Broker):
     def get_current_price(self, symbol) -> float:
         return self.api.get_last_trade(symbol).price
 
-    def get_barset(self, symbol: str, timeframe: Timeframe, limit: int) -> BarSet:
+    # TODO : get_barset has been deprecated use get_bars instead
+    # alpaca.get_bars('AAPL', TimeFrame.Day, start='2021-09-12', end="2021-09-21").df
+    # However, this does not allow query for current date !!!
+    def get_bars(self, symbol: str, timeframe: Timeframe, limit: int) -> BarSet:
         return self.api.get_barset(symbol, timeframe.value, limit).df[symbol]
 
     def get_positions(self) -> List[Position]:

@@ -52,13 +52,13 @@ class AppConfig(object):
 if __name__ == "__main__":
 
     app_config = AppConfig()
-    run_id = app_config.generate_run_id()
     start_trading = "06:30"
     stop_trading = "12:30"
     end_time = "13:00"
 
     # Run this only on weekdays : PST time
     if datetime.today().weekday() < 5:
+        run_id = app_config.generate_run_id()  # TODO: Add this to Logger
         schedule.every().day.at(start_trading).do(app_config.run_initial_steps)
         schedule.every(1).minutes.at(":00").until(stop_trading).do(app_config.run_strategy)
         schedule.every(5).minutes.at(":00").until(end_time).do(app_config.show_current_holdings)
